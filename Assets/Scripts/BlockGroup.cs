@@ -6,8 +6,8 @@ public class BlockGroup : PoolObject
     public override void PoolRecycle()
     {
         base.PoolRecycle();
-        downTicker = 0;
         bList = null;
+        downTicker = 0;
         isBox = false;
         isPiece = false;
         isBroken = false;
@@ -77,7 +77,7 @@ public class BlockGroup : PoolObject
         int[] use_colors = new int[2];
         for (int i = 0; i < use_colors.Length; i++)
         {
-            use_colors[i] = Random.Range(1, GameManager.Instance.ColorNum + 1);
+            use_colors[i] = Random.Range(0, GameManager.Instance.ColorNum);
         }
 
         List<Block> res = new List<Block>();
@@ -86,7 +86,7 @@ public class BlockGroup : PoolObject
             Block newBlock;
             if (block[0] == -2)
             {
-                newBlock = GameObjectPoolManager.Instance.Pool_BlockPool[0].AllocateGameObject<Block>(transform);
+                newBlock = GameObjectPoolManager.Instance.Pool_BreakBlockPool.AllocateGameObject<Block>(transform);
                 newBlock.initiateBlock(block[0], block);
                 res.Add(newBlock);
             }
@@ -97,6 +97,7 @@ public class BlockGroup : PoolObject
                 res.Add(newBlock);
             }
         }
+
         return res;
     }
 
@@ -104,6 +105,8 @@ public class BlockGroup : PoolObject
 
     public void down()
     {
+        if (bList == null) return;
+
         downTicker = 0;
         bool canMove = true;
         bool isReachBreaker = false;
@@ -120,6 +123,7 @@ public class BlockGroup : PoolObject
                 canMove = false;
                 break;
             }
+
             if (bi.gridPosition[1] >= GameManager.Instance.Height)
                 continue;
 
@@ -131,7 +135,7 @@ public class BlockGroup : PoolObject
             }
             else
             {
-                int nextPos_2 = BlocksManager.Instance.Grid[bi.gridPosition[0], bi.gridPosition[1] - 2];//下两个位子的情况
+                int nextPos_2 = BlocksManager.Instance.Grid[bi.gridPosition[0], bi.gridPosition[1] - 2]; //下两个位子的情况
                 if (nextPos_2 != -1)
                 {
                     BlocksManager.Instance.resetKeyPressTime();
@@ -139,59 +143,76 @@ public class BlockGroup : PoolObject
             }
 
             //下个位子的预测
-            int nextPos = BlocksManager.Instance.Grid[bi.gridPosition[0], bi.gridPosition[1] - 1];//下个位子的情况
+            int nextPos = BlocksManager.Instance.Grid[bi.gridPosition[0], bi.gridPosition[1] - 1]; //下个位子的情况
 
             if (nextPos == -2)
-            {//下个位子遇到Breaker
+            {
+                //下个位子遇到Breaker
                 isReachBreaker = true;
-                breakersGridPos.Add(new int[] { bi.gridPosition[0], bi.gridPosition[1] - 1 });
+                breakersGridPos.Add(new int[] {bi.gridPosition[0], bi.gridPosition[1] - 1});
                 ourBrokenBlock.Add(bi);
             }
 
             if (nextPos != -1 && bi.isBreaker)
-            {//如果下个位置非空且此方块为Breaker，则记录，待定
+            {
+                //如果下个位置非空且此方块为Breaker，则记录，待定
                 isBreakerReach = true;
-                breakGridsPos.Add(new int[] { bi.gridPosition[0], bi.gridPosition[1] - 1 });
+                breakGridsPos.Add(new int[] {bi.gridPosition[0], bi.gridPosition[1] - 1});
                 ourBreakers.Add(bi);
             }
 
             if (nextPos != -1 && nextPos != -2 && !bi.isBreaker)
-            {//如果自带非Breaker块的下一个位置非Breaker也非空，则无法移动
+            {
+                //如果自带非Breaker块的下一个位置非Breaker也非空，则无法移动
                 canMove = false;
                 break;
             }
         }
 
-        if (isReachBreaker && canMove)
-        {//如果碰到Breaker
-            if (ourBrokenBlock.Count > 0)
-                reachBreaker(breakersGridPos, ourBrokenBlock);
+        if (bList != null)
+        {
+            if (isReachBreaker && canMove)
+            {
+                //如果碰到Breaker
+                if (ourBrokenBlock.Count > 0)
+                    reachBreaker(breakersGridPos, ourBrokenBlock);
+            }
+        }
+        else
+        {
+            BlockGroupOver();
+            return;
         }
 
-        if (isBreakerReach && canMove)
-        {//自带的Breaker碰到东西，且整体还能向下移动
-            if (ourBreakers.Count > 0)
-                BreakerReach(ourBreakers, breakGridsPos);
+        if (bList != null)
+        {
+            if (isBreakerReach && canMove)
+            {
+                //自带的Breaker碰到东西，且整体还能向下移动
+                if (ourBreakers.Count > 0)
+                    BreakerReach(ourBreakers, breakGridsPos);
+            }
+        }
+        else
+        {
+            BlockGroupOver();
+            return;
         }
 
         if (!isBroken)
         {
-            if (bList != null)
+            if (bList != null && bList.Count > 0 && canMove)
             {
-                if (bList.Count > 0 && canMove)
+                gameObject.transform.Translate(BlocksManager.Instance.InitSize * Vector3.down);
+                foreach (Block bi in bList)
                 {
-                    gameObject.transform.Translate(BlocksManager.Instance.InitSize * Vector3.down);
-                    foreach (Block bi in bList)
-                    {
-                        bi.gridPosition[1]--;
-                    }
-                }
-                else
-                {
-                    reachBottom();
+                    bi.gridPosition[1]--;
                 }
             }
-
+            else
+            {
+                reachBottom();
+            }
         }
     }
 
@@ -212,6 +233,7 @@ public class BlockGroup : PoolObject
                 canMove = false;
                 break;
             }
+
             if (bi.gridPosition[1] >= GameManager.Instance.Height)
                 continue;
 
@@ -223,7 +245,7 @@ public class BlockGroup : PoolObject
             }
             else
             {
-                int nextPos_2 = BlocksManager.Instance.Grid[bi.gridPosition[0] - 2, bi.gridPosition[1]];//下两个位子的情况
+                int nextPos_2 = BlocksManager.Instance.Grid[bi.gridPosition[0] - 2, bi.gridPosition[1]]; //下两个位子的情况
                 if (nextPos_2 != -1)
                 {
                     BlocksManager.Instance.resetKeyPressTime();
@@ -231,50 +253,79 @@ public class BlockGroup : PoolObject
             }
 
             //下个位子的预测
-            int nextPos = BlocksManager.Instance.Grid[bi.gridPosition[0] - 1, bi.gridPosition[1]];//下个位子的情况
+            int nextPos = BlocksManager.Instance.Grid[bi.gridPosition[0] - 1, bi.gridPosition[1]]; //下个位子的情况
 
             if (nextPos == -2)
-            {//下个位子遇到Breaker
+            {
+                //下个位子遇到Breaker
                 isReachBreaker = true;
-                breakersGridPos.Add(new int[] { bi.gridPosition[0] - 1, bi.gridPosition[1] });
+                breakersGridPos.Add(new int[] {bi.gridPosition[0] - 1, bi.gridPosition[1]});
                 ourBrokenBlock.Add(bi);
             }
 
             if (nextPos != -1 && bi.isBreaker)
-            {//如果下个位置非空且此方块为Breaker，则记录，待定
+            {
+                //如果下个位置非空且此方块为Breaker，则记录，待定
                 isBreakerReach = true;
-                breakGridsPos.Add(new int[] { bi.gridPosition[0] - 1, bi.gridPosition[1] });
+                breakGridsPos.Add(new int[] {bi.gridPosition[0] - 1, bi.gridPosition[1]});
                 ourBreakers.Add(bi);
             }
 
             if (nextPos != -1 && nextPos != -2 && !bi.isBreaker)
-            {//如果自带非Breaker块的下一个位置非Breaker也非空，则无法移动
+            {
+                //如果自带非Breaker块的下一个位置非Breaker也非空，则无法移动
                 canMove = false;
                 break;
             }
         }
 
-        if (isReachBreaker)
-        {//如果碰到Breaker
-            if (ourBrokenBlock.Count > 0)
-                reachBreaker(breakersGridPos, ourBrokenBlock);
+        if (bList != null)
+        {
+            if (isReachBreaker)
+            {
+                //如果碰到Breaker
+                if (ourBrokenBlock.Count > 0)
+                    reachBreaker(breakersGridPos, ourBrokenBlock);
+            }
+        }
+        else
+        {
+            BlockGroupOver();
+            return;
         }
 
-        if (isBreakerReach && canMove)
-        {//自带的Breaker碰到东西，且整体还能向左移动
-            if (ourBreakers.Count > 0)
-                BreakerReach(ourBreakers, breakGridsPos);
+        if (bList != null)
+        {
+            if (isBreakerReach && canMove)
+            {
+                //自带的Breaker碰到东西，且整体还能向左移动
+                if (ourBreakers.Count > 0)
+                    BreakerReach(ourBreakers, breakGridsPos);
+            }
+        }
+        else
+        {
+            BlockGroupOver();
+            return;
         }
 
         if (!isBroken)
         {
-            if (bList.Count > 0 && canMove)
+            if (bList != null)
             {
-                gameObject.transform.Translate(BlocksManager.Instance.InitSize * Vector3.left);
-                foreach (Block bi in bList)
+                if (bList.Count > 0 && canMove)
                 {
-                    bi.gridPosition[0]--;
+                    gameObject.transform.Translate(BlocksManager.Instance.InitSize * Vector3.left);
+                    foreach (Block bi in bList)
+                    {
+                        bi.gridPosition[0]--;
+                    }
                 }
+            }
+            else
+            {
+                BlockGroupOver();
+                return;
             }
         }
     }
@@ -296,6 +347,7 @@ public class BlockGroup : PoolObject
                 canMove = false;
                 break;
             }
+
             if (bi.gridPosition[1] >= GameManager.Instance.Height)
                 continue;
 
@@ -306,7 +358,7 @@ public class BlockGroup : PoolObject
             }
             else
             {
-                int nextPos_2 = BlocksManager.Instance.Grid[bi.gridPosition[0] + 2, bi.gridPosition[1]];//下两个位子的情况
+                int nextPos_2 = BlocksManager.Instance.Grid[bi.gridPosition[0] + 2, bi.gridPosition[1]]; //下两个位子的情况
                 if (nextPos_2 != -1)
                 {
                     BlocksManager.Instance.resetKeyPressTime();
@@ -314,50 +366,79 @@ public class BlockGroup : PoolObject
             }
 
             //下个位子的预测
-            int nextPos = BlocksManager.Instance.Grid[bi.gridPosition[0] + 1, bi.gridPosition[1]];//下个位子的情况
+            int nextPos = BlocksManager.Instance.Grid[bi.gridPosition[0] + 1, bi.gridPosition[1]]; //下个位子的情况
 
             if (nextPos == -2)
-            {//下个位子遇到Breaker
+            {
+                //下个位子遇到Breaker
                 isReachBreaker = true;
-                breakersGridPos.Add(new int[] { bi.gridPosition[0] + 1, bi.gridPosition[1] });
+                breakersGridPos.Add(new int[] {bi.gridPosition[0] + 1, bi.gridPosition[1]});
                 ourBrokenBlock.Add(bi);
             }
 
             if (nextPos != -1 && bi.isBreaker)
-            {//如果下个位置非空且此方块为Breaker，则记录，待定
+            {
+                //如果下个位置非空且此方块为Breaker，则记录，待定
                 isBreakerReach = true;
-                breakGridsPos.Add(new int[] { bi.gridPosition[0] + 1, bi.gridPosition[1] });
+                breakGridsPos.Add(new int[] {bi.gridPosition[0] + 1, bi.gridPosition[1]});
                 ourBreakers.Add(bi);
             }
 
             if (nextPos != -1 && nextPos != -2 && !bi.isBreaker)
-            {//如果自带非Breaker块的下一个位置非Breaker也非空，则无法移动
+            {
+                //如果自带非Breaker块的下一个位置非Breaker也非空，则无法移动
                 canMove = false;
                 break;
             }
         }
 
-        if (isReachBreaker)
-        {//如果碰到Breaker
-            if (ourBrokenBlock.Count > 0)
-                reachBreaker(breakersGridPos, ourBrokenBlock);
+        if (bList != null)
+        {
+            if (isReachBreaker)
+            {
+                //如果碰到Breaker
+                if (ourBrokenBlock.Count > 0)
+                    reachBreaker(breakersGridPos, ourBrokenBlock);
+            }
+        }
+        else
+        {
+            BlockGroupOver();
+            return;
         }
 
-        if (isBreakerReach && canMove)
-        {//自带的Breaker碰到东西，且整体还能向左移动
-            if (ourBreakers.Count > 0)
-                BreakerReach(ourBreakers, breakGridsPos);
+        if (bList != null)
+        {
+            if (isBreakerReach && canMove)
+            {
+                //自带的Breaker碰到东西，且整体还能向左移动
+                if (ourBreakers.Count > 0)
+                    BreakerReach(ourBreakers, breakGridsPos);
+            }
+        }
+        else
+        {
+            BlockGroupOver();
+            return;
         }
 
         if (!isBroken)
         {
-            if (bList.Count > 0 && canMove)
+            if (bList != null)
             {
-                gameObject.transform.Translate(BlocksManager.Instance.InitSize * Vector3.right);
-                foreach (Block bi in bList)
+                if (bList.Count > 0 && canMove)
                 {
-                    bi.gridPosition[0]++;
+                    gameObject.transform.Translate(BlocksManager.Instance.InitSize * Vector3.right);
+                    foreach (Block bi in bList)
+                    {
+                        bi.gridPosition[0]++;
+                    }
                 }
+            }
+            else
+            {
+                BlockGroupOver();
+                return;
             }
         }
     }
@@ -373,19 +454,21 @@ public class BlockGroup : PoolObject
         bool canRotate = true;
         foreach (Block bi in bList)
         {
-            bi.gridPosition_RotatePrepare[0] = (int)(-bi.relativePosition[1] + gameObject.transform.position.x + GameManager.Instance.Width / 2);
-            bi.gridPosition_RotatePrepare[1] = (int)(bi.relativePosition[0] + gameObject.transform.position.y + GameManager.Instance.Height / 2);
+            bi.gridPosition_RotatePrepare[0] = (int) (-bi.relativePosition[1] + gameObject.transform.position.x + GameManager.Instance.Width / 2);
+            bi.gridPosition_RotatePrepare[1] = (int) (bi.relativePosition[0] + gameObject.transform.position.y + GameManager.Instance.Height / 2);
             if (bi.gridPosition_RotatePrepare[0] >= GameManager.Instance.Width || bi.gridPosition_RotatePrepare[0] < 0 || bi.gridPosition_RotatePrepare[1] < 0 || bi.gridPosition_RotatePrepare[1] >= GameManager.Instance.Height)
             {
                 canRotate = false;
                 break;
             }
+
             if (BlocksManager.Instance.Grid[bi.gridPosition_RotatePrepare[0], bi.gridPosition_RotatePrepare[1]] != -1)
             {
                 canRotate = false;
                 break;
             }
         }
+
         if (canRotate)
         {
             foreach (Block bi in bList)
@@ -410,17 +493,20 @@ public class BlockGroup : PoolObject
             cenX += bi.gridPosition[0];
             cenY += bi.gridPosition[1];
         }
+
         cenX /= bList.Count;
         cenY /= bList.Count;
         foreach (Block bi in bList)
         {
-            bi.gridPosition_RotatePrepare[0] = (int)(cenY + cenX - bi.gridPosition[1]);
-            bi.gridPosition_RotatePrepare[1] = (int)(cenY - cenX + bi.gridPosition[0]);
+            bi.gridPosition_RotatePrepare[0] = (int) (cenY + cenX - bi.gridPosition[1]);
+            bi.gridPosition_RotatePrepare[1] = (int) (cenY - cenX + bi.gridPosition[0]);
         }
+
         for (int i = 0; i < gameObject.transform.childCount; i++)
         {
             gameObject.transform.GetChild(i).Translate(BlocksManager.Instance.InitSize * Vector3.right * (bList[i].gridPosition_RotatePrepare[0] - bList[i].gridPosition[0]) + Vector3.up * (bList[i].gridPosition_RotatePrepare[1] - bList[i].gridPosition[1]));
         }
+
         foreach (Block bi in bList)
         {
             bi.gridPosition[0] = bi.gridPosition_RotatePrepare[0];
@@ -431,39 +517,47 @@ public class BlockGroup : PoolObject
     //方块到底后，触发一系列事件
     private void reachBottom()
     {
-        foreach (Block bi in bList)
-        {
-            if (bi.gridPosition[1] >= GameManager.Instance.Height)
+        if (bList != null)
+            foreach (Block bi in bList)
             {
-                Debug.Log("Game Over");
-                GameManager.Instance.GameOver();
-                return;
+                if (bi.gridPosition[1] >= GameManager.Instance.Height)
+                {
+                    Debug.Log("Game Over");
+                    GameManager.Instance.GameOver();
+                    return;
+                }
+
+                if (bi.isBreaker)
+                {
+                    BlocksManager.Instance.Grid[bi.gridPosition[0], bi.gridPosition[1]] = -2;
+                }
+                else
+                {
+                    BlocksManager.Instance.Grid[bi.gridPosition[0], bi.gridPosition[1]] = bi.ColorIndex;
+                }
+
+                BlocksManager.Instance.Blocks[bi.gridPosition[0], bi.gridPosition[1]] = bi;
+                bi.gameObject.transform.parent = BlocksManager.Instance.gameObject.transform;
             }
 
-            if (bi.isBreaker)
-            {
-                BlocksManager.Instance.Grid[bi.gridPosition[0], bi.gridPosition[1]] = -2;
-            }
-            else
-            {
-                BlocksManager.Instance.Grid[bi.gridPosition[0], bi.gridPosition[1]] = bi.ColorIndex;
-            }
+        BlockGroupOver();
+    }
 
-            BlocksManager.Instance.Blocks[bi.gridPosition[0], bi.gridPosition[1]] = bi;
-            bi.gameObject.transform.parent = BlocksManager.Instance.gameObject.transform;
-        }
-
+    private void BlockGroupOver()
+    {
         BlocksManager.Instance.refreshGrid();
         if (isPiece)
         {
             BlocksManager.Instance.currentBlockGroupPieces.Remove(this);
         }
+
         if (BlocksManager.Instance.currentBlockGroup == this)
         {
             BlocksManager.Instance.currentBlockGroup = null;
             BlocksManager.Instance.resetKeyPressTime();
             BlocksManager.Instance.resetKeyPressBeginTime();
         }
+
         if (BlocksManager.Instance.currentBlockGroupPieces.Count == 0 && BlocksManager.Instance.currentBlockGroup == null)
         {
             BlocksManager.Instance.creatNewBlockGroup();
@@ -480,11 +574,13 @@ public class BlockGroup : PoolObject
             if (BlocksManager.Instance.Blocks[breakerGridPos[0], breakerGridPos[1]] != null)
                 BlocksManager.Instance.Blocks[breakerGridPos[0], breakerGridPos[1]].removeBlock();
         }
+
         foreach (Block ob in ourBrokenBlock)
         {
-            bList.Remove(ob);
+            if (bList != null) bList.Remove(ob);
             ob.removeBlock();
         }
+
         tryBreakIntoPieces(true);
         BlocksManager.Instance.tryBreakIntoPieces(GameManager.Instance.IsPieceAbandon);
     }
@@ -495,9 +591,10 @@ public class BlockGroup : PoolObject
         int countBreakScore = 0;
         foreach (Block ourBreaker in ourBreakers)
         {
-            bList.Remove(ourBreaker);
+            if (bList != null) bList.Remove(ourBreaker);
             ourBreaker.removeBlock();
         }
+
         foreach (int[] breakGridPos in breakGridsPos)
         {
             Block breakMegaBlock = BlocksManager.Instance.isInBoxes(breakGridPos);
@@ -522,6 +619,7 @@ public class BlockGroup : PoolObject
 
     //是否为大块分裂成的小块
     public bool isPiece = false;
+
     //该大块是否已经分裂
     public bool isBroken = false;
 
@@ -548,11 +646,13 @@ public class BlockGroup : PoolObject
                         {
                             rootI = unionFind[rootI];
                         }
+
                         int rootJ = j;
                         while (rootJ != unionFind[rootJ])
                         {
                             rootJ = unionFind[rootJ];
                         }
+
                         if (rootI != rootJ)
                             unionFind[rootJ] = rootI;
                     }
@@ -566,11 +666,13 @@ public class BlockGroup : PoolObject
                         {
                             rootI = unionFind[rootI];
                         }
+
                         int rootJ = j;
                         while (rootJ != unionFind[rootJ])
                         {
                             rootJ = unionFind[rootJ];
                         }
+
                         if (rootI != rootJ)
                             unionFind[rootJ] = rootI;
                     }
@@ -593,6 +695,7 @@ public class BlockGroup : PoolObject
             {
                 dic.Add(unionFind[i], new List<Block>());
             }
+
             dic[unionFind[i]].Add(bList[i]);
         }
 
@@ -625,4 +728,3 @@ public class BlockGroup : PoolObject
 
     #endregion
 }
-

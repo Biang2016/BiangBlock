@@ -6,6 +6,9 @@ public class GameObjectPoolManager : MonoSingletion<GameObjectPoolManager>
     {
     }
 
+    public GameObjectPool Pool_BreakBlockPool;
+    public PoolObject BreakBlockPrefab;
+
     public GameObjectPool[] Pool_BlockPool;
     public PoolObject[] BlockPrefab;
 
@@ -17,6 +20,7 @@ public class GameObjectPoolManager : MonoSingletion<GameObjectPoolManager>
 
     void Awake()
     {
+        Pool_BreakBlockPool.Initiate((BreakBlockPrefab), 10);
         for (int i = 0; i < Pool_BlockPool.Length; i++)
         {
             Pool_BlockPool[i].Initiate((BlockPrefab[i]), 50);
@@ -26,4 +30,3 @@ public class GameObjectPoolManager : MonoSingletion<GameObjectPoolManager>
         Pool_AbandonBlockGroupPool.Initiate(AbandonBlockGroupPrefab, 30);
     }
 }
-

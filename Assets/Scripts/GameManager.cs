@@ -71,13 +71,13 @@ public class GameManager : MonoSingletion<GameManager>
         initializeScoreCanvas();
         GameStartCanvas.SetActive(false);
         ScoreCanvas.SetActive(true);
-        BlocksManager.Instance.StartGame();
+        BlocksManager.Instance.ResetGame();
     }
 
     public void ClearGame()
     {
         Time.timeScale = 0;
-        BlocksManager.Instance.StartGame();
+        BlocksManager.Instance.ResetGame();
     }
 
     public void Replay()

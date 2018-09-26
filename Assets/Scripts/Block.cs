@@ -8,6 +8,10 @@ public class Block : PoolObject
         base.PoolRecycle();
         isMegaBlock = false;
         BlockInfo = null;
+        leftBlock = null;
+        rightBlock = null;
+        aboveBlock = null;
+        beneathBlock = null;
     }
 
     public int ColorIndex;

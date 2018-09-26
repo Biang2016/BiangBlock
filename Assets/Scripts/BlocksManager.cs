@@ -27,39 +27,26 @@ public class BlocksManager : MonoSingletion<BlocksManager>
 
     void Awake()
     {
-        InitSize = (float)19 / GameManager.Instance.Width;
+        InitSize = (float) 19 / GameManager.Instance.Width;
     }
 
     void Start()
     {
     }
 
-    public void StartGame()
-    {
-        Grid = new int[GameManager.Instance.Width, GameManager.Instance.Height];
-        for (int i = 0; i < GameManager.Instance.Width; i++)
-        {
-            for (int j = 0; j < GameManager.Instance.Height; j++)
-            {
-                Grid[i, j] = -1;
-            }
-        }
-        Blocks = new Block[GameManager.Instance.Width, GameManager.Instance.Height];
-        MegaBlock_Pointers = new Block[GameManager.Instance.Width, GameManager.Instance.Height];
-        StartPosition = new Vector3(0f, GameManager.Instance.Height / 2 + 3, InitZ);
-        creatNewBlockGroup();
-    }
-
     public void ResetGame()
     {
-        foreach (Block b in Blocks)
-        {
-            b.PoolRecycle();
-        }
-        foreach (Block mb in MegaBlocks)
-        {
-            mb.PoolRecycle();
-        }
+        if (Blocks != null)
+            foreach (Block b in Blocks)
+            {
+                if (b) b.PoolRecycle();
+            }
+
+        if (MegaBlocks != null)
+            foreach (Block mb in MegaBlocks)
+            {
+                if (mb) mb.PoolRecycle();
+            }
 
         Grid = new int[GameManager.Instance.Width, GameManager.Instance.Height];
         for (int i = 0; i < GameManager.Instance.Width; i++)
@@ -69,6 +56,19 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                 Grid[i, j] = -1;
             }
         }
+
+        if (currentBlockGroup != null)
+        {
+            Block[] children = currentBlockGroup.transform.GetComponentsInChildren<Block>();
+            foreach (Block child in children)
+            {
+                child.PoolRecycle();
+            }
+
+            currentBlockGroup.PoolRecycle();
+            currentBlockGroup = null;
+        }
+
         Blocks = new Block[GameManager.Instance.Width, GameManager.Instance.Height];
         MegaBlock_Pointers = new Block[GameManager.Instance.Width, GameManager.Instance.Height];
         StartPosition = new Vector3(0f, GameManager.Instance.Height / 2 + 3, InitZ);
@@ -136,12 +136,14 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                     }
                 }
             }
+
             if (Input.GetKeyUp(KeyCode.DownArrow))
             {
                 if (downKeyTick < KeyClickTimeThreshold)
                 {
                     currentBlockGroup.down();
                 }
+
                 resetKeyPressTime();
                 resetKeyPressBeginTime();
             }
@@ -152,8 +154,8 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                 leftKeyTick += Time.deltaTime;
                 if (leftKeyPressTime >= KeyPressTimeThreshold)
                 {
-
                 }
+
                 if (leftKeyPressTime >= KeyPressTimeThreshold)
                 {
                     float leftInterval = KeyPressTimeThreshold / (leftKeyPressTime / KeyPressTimeThreshold);
@@ -164,12 +166,14 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                     }
                 }
             }
+
             if (Input.GetKeyUp(KeyCode.LeftArrow))
             {
                 if (leftKeyTick < KeyClickTimeThreshold)
                 {
                     currentBlockGroup.left_move();
                 }
+
                 resetKeyPressTime();
                 resetKeyPressBeginTime();
             }
@@ -188,12 +192,14 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                     }
                 }
             }
+
             if (Input.GetKeyUp(KeyCode.RightArrow))
             {
                 if (rightKeyTick < KeyClickTimeThreshold)
                 {
                     currentBlockGroup.right_move();
                 }
+
                 resetKeyPressTime();
                 resetKeyPressBeginTime();
             }
@@ -250,7 +256,8 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                 currentBiggestCol = tmp[3];
             }
         }
-        GameManager.Instance.SetMaxBlockSize(new int[] { currentBiggestRow, currentBiggestCol });
+
+        GameManager.Instance.SetMaxBlockSize(new int[] {currentBiggestRow, currentBiggestCol});
 
         bool isMegaBlockDisapear = false;
         int countEliminateScore = 0;
@@ -270,7 +277,6 @@ public class BlocksManager : MonoSingletion<BlocksManager>
 
         if (isMegaBlockDisapear)
             refreshGrid();
-
     }
 
     /// <summary>
@@ -301,10 +307,10 @@ public class BlocksManager : MonoSingletion<BlocksManager>
 
         for (int i = 0; i < GameManager.Instance.Width; i++)
         {
-            int j = 0;//对于在地面的那一排，他们所在的连通区被认为是接地的
+            int j = 0; //对于在地面的那一排，他们所在的连通区被认为是接地的
             if (Blocks[i, j] != null && !Blocks[i, j].isSignedRootedInGround)
             {
-                Blocks[i, j].SignRootedInGround();//递归标记连通区
+                Blocks[i, j].SignRootedInGround(); //递归标记连通区
             }
         }
 
@@ -313,7 +319,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
         {
             if (b != null && !b.isSignedRootedInGround && !b.isSignedFly)
             {
-                List<Block> blockPiecesL = b.SignFly();//递归标记连通区
+                List<Block> blockPiecesL = b.SignFly(); //递归标记连通区
                 blockPiecesLL.Add(blockPiecesL);
             }
         }
@@ -331,6 +337,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
             {
                 newBlockGroup = GameObjectPoolManager.Instance.Pool_AbandonBlockGroupPool.AllocateGameObject<AbandonBlockGroup>(transform);
             }
+
             foreach (Block b in blockPiecesL)
             {
                 b.transform.parent = newBlockGroup.transform;
@@ -339,19 +346,19 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                 Blocks[b.gridPosition[0], b.gridPosition[1]] = null;
                 Grid[b.gridPosition[0], b.gridPosition[1]] = -1;
             }
+
             if (!isPieceAbandon)
             {
-                BlockGroup bg = (BlockGroup)newBlockGroup;
+                BlockGroup bg = (BlockGroup) newBlockGroup;
                 bg.Initialize(blockPiecesL);
                 bg.isPiece = true;
                 currentBlockGroupPieces.Add(bg);
             }
             else
             {
-                ((AbandonBlockGroup)newBlockGroup).Initialize(blockPiecesL);
-                ((AbandonBlockGroup)newBlockGroup).BeginDrop();
+                ((AbandonBlockGroup) newBlockGroup).Initialize(blockPiecesL);
+                ((AbandonBlockGroup) newBlockGroup).BeginDrop();
             }
-
         }
 
         if (countFallBlockNums > 0)
@@ -368,6 +375,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
             if (gridPosition[0] >= megaBlock.BlockInfo[1] && gridPosition[0] <= megaBlock.BlockInfo[1] + megaBlock.BlockInfo[3] - 1 && gridPosition[1] >= megaBlock.BlockInfo[2] && gridPosition[1] <= megaBlock.BlockInfo[2] + megaBlock.BlockInfo[4] - 1)
                 return megaBlock;
         }
+
         return null;
     }
 
@@ -384,6 +392,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                     MegaBlock_Pointers[i, j] = null;
                 }
             }
+
             MegaBlocks.Remove(megaBlock);
             megaBlock.PoolRecycle();
         }
@@ -439,6 +448,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                             count = 0;
                         }
                     }
+
                     count = 0;
                 }
 
@@ -463,19 +473,25 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                             count = 0;
                         }
                     }
+
                     count = 0;
                 }
 
                 if (countMax_Row > countMax_Col)
                 {
-                    res.Add(new int[] {c, rightBottom_Row [0] - max [c] + 1, rightBottom_Row [1] - (countMax_Row + max [c] - 1) + 1,
-                        max [c], countMax_Row + max [c] - 1
+                    res.Add(new int[]
+                    {
+                        c, rightBottom_Row[0] - max[c] + 1, rightBottom_Row[1] - (countMax_Row + max[c] - 1) + 1,
+                        max[c], countMax_Row + max[c] - 1
                     });
                 }
                 else
                 {
-                    res.Add(new int[] {c, rightBottom_Col [0] - (countMax_Col + max [c] - 1) + 1, rightBottom_Col [1] -
-                        max [c] + 1, countMax_Col + max [c] - 1, max [c]
+                    res.Add(new int[]
+                    {
+                        c, rightBottom_Col[0] - (countMax_Col + max[c] - 1) + 1, rightBottom_Col[1] -
+                                                                                 max[c] + 1,
+                        countMax_Col + max[c] - 1, max[c]
                     });
                 }
             }
@@ -491,6 +507,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                     resultGrid[i, j] = grid[i, j];
                 }
             }
+
             foreach (int[] megaBlock in res)
             {
                 for (int i = megaBlock[1]; i <= megaBlock[1] + megaBlock[3] - 1; i++)
@@ -501,6 +518,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                     }
                 }
             }
+
             List<int[]> newRes = findAllBoxes(resultGrid, colorNum);
             foreach (int[] megaBlock in newRes)
             {
@@ -516,7 +534,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
         Block newMegaBlock = GameObjectPoolManager.Instance.Pool_BlockPool[colorIndex].AllocateGameObject<Block>(transform);
         MegaBlocks.Add(newMegaBlock);
         newMegaBlock.isMegaBlock = true;
-        newMegaBlock.BlockInfo = new int[] { colorIndex, startCol, startRow, Cols, Rows };
+        newMegaBlock.BlockInfo = new int[] {colorIndex, startCol, startRow, Cols, Rows};
         float cenX = (startCol + Cols / 2f - GameManager.Instance.Width / 2f) * InitSize;
         float cenY = (startRow + Rows / 2f - GameManager.Instance.Height / 2f) * InitSize;
         float sizeX = Cols * InitSize - InitBorder;
@@ -533,7 +551,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
             }
         }
 
-        GameManager.Instance.SetMaxBlockSize(new int[] { Cols, Rows });
+        GameManager.Instance.SetMaxBlockSize(new int[] {Cols, Rows});
     }
 
     #endregion
