@@ -24,9 +24,9 @@ public class Block : PoolObject
     public GameObject dieEffect;
 
     public bool isMegaBlock = false;
-    public int[] BlockInfo;//如果是MegaBlock的时候使用
+    public int[] BlockInfo; //如果是MegaBlock的时候使用
 
-    public void initiateBlock(int bc, int[] rp)
+    public void InitiateBlockByRelativePosition(int bc, int[] rp)
     {
         if (bc == -2)
             isBreaker = true;
@@ -37,10 +37,28 @@ public class Block : PoolObject
         relativePosition[1] = rp[2];
 
         gameObject.transform.localScale = new Vector3(BlocksManager.Instance.InitSize - BlocksManager.Instance.InitBorder, BlocksManager.Instance.InitSize - BlocksManager.Instance.InitBorder, BlocksManager.Instance.InitThick);
-        gameObject.transform.position = new Vector3(relativePosition[0] + gameObject.transform.parent.position.x, relativePosition[1] + gameObject.transform.parent.position.y, BlocksManager.Instance.InitZ);
-        gridPosition[0] = (int)(relativePosition[0] + gameObject.transform.parent.position.x + GameManager.Instance.Width / 2);
-        gridPosition[1] = (int)(relativePosition[1] + gameObject.transform.parent.position.y + GameManager.Instance.Height / 2);
+        gameObject.transform.position = new Vector3(relativePosition[0] * BlocksManager.Instance.InitSize + gameObject.transform.parent.position.x, relativePosition[1] * BlocksManager.Instance.InitSize + gameObject.transform.parent.position.y, BlocksManager.Instance.InitZ);
+        gridPosition[0] = (int) (relativePosition[0] + gameObject.transform.parent.position.x + GameManager.Instance.Width / 2);
+        gridPosition[1] = (int) (relativePosition[1] + gameObject.transform.parent.position.y + GameManager.Instance.Height / 2);
     }
+
+    public void InitiateBlockByGridPosition(int bc, int[] gp)
+    {
+        if (bc == -2)
+            isBreaker = true;
+        else
+            ColorIndex = bc;
+
+        gameObject.transform.localScale = new Vector3(BlocksManager.Instance.InitSize - BlocksManager.Instance.InitBorder, BlocksManager.Instance.InitSize - BlocksManager.Instance.InitBorder, BlocksManager.Instance.InitThick);
+        RefreshGridPosition(gp);
+    }
+
+    public void RefreshGridPosition(int[] gp)
+    {
+        gridPosition = gp;
+        gameObject.transform.position = new Vector3((gp[0] - GameManager.Instance.Width / 2) * BlocksManager.Instance.InitSize, (gp[1] - GameManager.Instance.Height / 2) * BlocksManager.Instance.InitSize, BlocksManager.Instance.InitZ);
+    }
+
 
     public void removeBlock()
     {
@@ -53,6 +71,7 @@ public class Block : PoolObject
             Vector3 thisPos = new Vector3(pos.x, pos.y, pos.z + 0.3f);
             Instantiate(dieEffect, thisPos, transform.rotation, BlocksManager.Instance.transform);
         }
+
         PoolRecycle();
     }
 
@@ -91,18 +110,21 @@ public class Block : PoolObject
             foreach (Block b in res_l)
                 res.Add(b);
         }
+
         if (rightBlock != null && !rightBlock.isSignedFly)
         {
             List<Block> res_r = rightBlock.SignFly();
             foreach (Block b in res_r)
                 res.Add(b);
         }
+
         if (aboveBlock != null && !aboveBlock.isSignedFly)
         {
             List<Block> res_a = aboveBlock.SignFly();
             foreach (Block b in res_a)
                 res.Add(b);
         }
+
         if (beneathBlock != null && !beneathBlock.isSignedFly)
         {
             List<Block> res_b = beneathBlock.SignFly();
@@ -112,6 +134,4 @@ public class Block : PoolObject
 
         return res;
     }
-
 }
-

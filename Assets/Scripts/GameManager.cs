@@ -9,10 +9,11 @@ public class GameManager : MonoSingletion<GameManager>
 
     public bool IsPieceAbandon = false;
 
-    public float downTime = 1f;
-    public float pieceDownTime = 0.1f;
-    public float abandonPieceDownTime = 0.03f;
-    public float dieEffectDelay = 0.1f;
+    public float AddLineInterval = 5f;
+    public float DownTime = 1f;
+    public float PieceDownTime = 0.1f;
+    public float AbandonPieceDownTime = 0.03f;
+    public float DieEffectDelay = 0.1f;
 
     void Awake()
     {
@@ -109,6 +110,7 @@ public class GameManager : MonoSingletion<GameManager>
     #endregion
 
     #region Points Show
+
     public GameObject ScoreCanvas;
 
     public Text ScoreText;
@@ -127,6 +129,7 @@ public class GameManager : MonoSingletion<GameManager>
     public GameObject BreakScoreCanvas;
 
     private int score = 0;
+
     private int Score
     {
         get { return score; }
@@ -142,10 +145,7 @@ public class GameManager : MonoSingletion<GameManager>
 
     private int EliminateTotalScore
     {
-        get
-        {
-            return eliminateTotalScore;
-        }
+        get { return eliminateTotalScore; }
         set
         {
             eliminateTotalScore = value;
@@ -153,13 +153,12 @@ public class GameManager : MonoSingletion<GameManager>
             EliminateTotalScoreText.text = value.ToString();
         }
     }
+
     private int fallTotalScore = 0;
+
     private int FallTotalScore
     {
-        get
-        {
-            return fallTotalScore;
-        }
+        get { return fallTotalScore; }
         set
         {
             fallTotalScore = value;
@@ -167,13 +166,12 @@ public class GameManager : MonoSingletion<GameManager>
             FallTotalScoreText.text = value.ToString();
         }
     }
+
     private int breakScore = 0;
+
     private int BreakTotalScore
     {
-        get
-        {
-            return breakScore;
-        }
+        get { return breakScore; }
         set
         {
             breakScore = value;
@@ -193,7 +191,7 @@ public class GameManager : MonoSingletion<GameManager>
     private void initializeScoreCanvas()
     {
         ScoreText.text = "0";
-        SizeText.text = "0x0";
+        SizeText.text = "1x1";
         Score = 0;
         EliminateTotalScore = 0;
         FallTotalScore = 0;
@@ -236,6 +234,7 @@ public class GameManager : MonoSingletion<GameManager>
 
     int currentRow = 1;
     int currentCol = 1;
+
     public void SetMaxBlockSize(int[] size)
     {
         if (size[0] == currentRow && size[1] == currentCol) return;
@@ -247,4 +246,3 @@ public class GameManager : MonoSingletion<GameManager>
 
     #endregion
 }
-

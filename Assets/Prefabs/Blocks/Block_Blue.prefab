@@ -20,7 +20,6 @@ GameObject:
   m_Component:
   - component: {fileID: 4376721368819814}
   - component: {fileID: 33422108633189462}
-  - component: {fileID: 65172036129495826}
   - component: {fileID: 23466427924327742}
   - component: {fileID: 114132579861962666}
   m_Layer: 8
@@ -85,18 +84,6 @@ MeshFilter:
   m_PrefabInternal: {fileID: 100100000}
   m_GameObject: {fileID: 1442249044111582}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
---- !u!65 &65172036129495826
-BoxCollider:
-  m_ObjectHideFlags: 1
-  m_PrefabParentObject: {fileID: 0}
-  m_PrefabInternal: {fileID: 100100000}
-  m_GameObject: {fileID: 1442249044111582}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &114132579861962666
 MonoBehaviour:
   m_ObjectHideFlags: 1
@@ -108,12 +95,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 92c46c3c44eb94554acac41fb8a41a52, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  color: 3
+  ColorIndex: 0
   relativePosition: 0000000000000000
   gridPosition: 0000000000000000
   gridPosition_RotatePrepare: 0000000000000000
   isBreaker: 0
   dieEffect: {fileID: 1684460418624034, guid: 8d9dcbcd6edef439bbc63ee6315a829d, type: 2}
+  isMegaBlock: 0
+  BlockInfo: 
   leftBlock: {fileID: 0}
   rightBlock: {fileID: 0}
   aboveBlock: {fileID: 0}

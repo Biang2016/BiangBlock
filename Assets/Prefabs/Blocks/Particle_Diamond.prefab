@@ -4658,8 +4658,8 @@ ParticleSystemRenderer:
   m_ReflectionProbeUsage: 0
   m_RenderingLayerMask: 4294967295
   m_Materials:
-  - {fileID: 2100000, guid: 677afb9bb350e435ea1959c810b8d276, type: 2}
-  - {fileID: 2100000, guid: 677afb9bb350e435ea1959c810b8d276, type: 2}
+  - {fileID: 2100000, guid: 1f4e190a7a26b44f1bbd7afc8d333847, type: 2}
+  - {fileID: 2100000, guid: 1f4e190a7a26b44f1bbd7afc8d333847, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

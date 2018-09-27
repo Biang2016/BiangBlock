@@ -20,7 +20,8 @@ public class BlocksManagerEditor : Editor
             for (int j = 0; j < bm.Grid.GetLength(1); j++)
             {
                 Vector3 offset = (i - GameManager.Instance.Width / 2 - 0.5f) * Vector3.right * BlocksManager.Instance.InitSize + (j - GameManager.Instance.Height / 2 + 0.5f) * Vector3.up * BlocksManager.Instance.InitSize;
-                Handles.Label(bm.transform.position + offset, bm.Grid[i, j].ToString(), style); ;
+                if (bm.ShowGridColor) Handles.Label(bm.transform.position + offset, bm.Grid[i, j].ToString(), style);
+                if (bm.ShowGridIndex) Handles.Label(bm.transform.position + offset, i + "," + j, style);
             }
         }
     }

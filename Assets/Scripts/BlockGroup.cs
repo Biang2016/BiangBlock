@@ -23,11 +23,11 @@ public class BlockGroup : PoolObject
     private void InitDownTime()
     {
         if (!isPiece)
-            downTime = GameManager.Instance.downTime;
+            downTime = GameManager.Instance.DownTime;
         else if (!GameManager.Instance.IsPieceAbandon)
-            downTime = GameManager.Instance.pieceDownTime;
+            downTime = GameManager.Instance.PieceDownTime;
         else
-            downTime = GameManager.Instance.abandonPieceDownTime;
+            downTime = GameManager.Instance.AbandonPieceDownTime;
     }
 
     //每隔一定时间自动下落一格
@@ -43,7 +43,7 @@ public class BlockGroup : PoolObject
             }
             else
             {
-                down();
+                down(true);
             }
         }
     }
@@ -87,13 +87,13 @@ public class BlockGroup : PoolObject
             if (block[0] == -2)
             {
                 newBlock = GameObjectPoolManager.Instance.Pool_BreakBlockPool.AllocateGameObject<Block>(transform);
-                newBlock.initiateBlock(block[0], block);
+                newBlock.InitiateBlockByRelativePosition(block[0], block);
                 res.Add(newBlock);
             }
             else
             {
                 newBlock = GameObjectPoolManager.Instance.Pool_BlockPool[use_colors[block[0]]].AllocateGameObject<Block>(transform);
-                newBlock.initiateBlock(use_colors[block[0]], block);
+                newBlock.InitiateBlockByRelativePosition(use_colors[block[0]], block);
                 res.Add(newBlock);
             }
         }
@@ -103,11 +103,13 @@ public class BlockGroup : PoolObject
 
     #region Block motions
 
-    public void down()
+    public void down(bool needTranslate) //needTranslate表示，是否是有Addline引起的模拟down
     {
         if (bList == null) return;
 
-        downTicker = 0;
+        if (needTranslate) Debug.Log("SelfDown");
+        else Debug.Log("AddLineDown");
+        if (needTranslate) downTicker = 0;
         bool canMove = true;
         bool isReachBreaker = false;
         bool isBreakerReach = false;
@@ -115,6 +117,31 @@ public class BlockGroup : PoolObject
         List<Block> ourBrokenBlock = new List<Block>();
         List<int[]> breakGridsPos = new List<int[]>();
         List<Block> ourBreakers = new List<Block>();
+
+        bool needMoveUp = false;
+        foreach (Block bi in bList)
+        {
+            if (bi.gridPosition[1] >= GameManager.Instance.Height)
+                continue;
+
+            if (!needTranslate)
+            {
+                if (BlocksManager.Instance.Grid[bi.gridPosition[0], bi.gridPosition[1]] != -1) //如果是Addline引起的模拟down，需要判定本体是否已经陷入上升的基础中
+                {
+                    needMoveUp = true;
+                    break;
+                }
+            }
+        }
+
+        if (needMoveUp) //如果是Addline引起的模拟down，需要判定本体是否已经陷入上升的基础中，如果是，则要向上移动一格
+        {
+            gameObject.transform.Translate(BlocksManager.Instance.InitSize * Vector3.up);
+            foreach (Block bi in bList)
+            {
+                bi.gridPosition[1]++;
+            }
+        }
 
         foreach (Block bi in bList)
         {
@@ -126,7 +153,6 @@ public class BlockGroup : PoolObject
 
             if (bi.gridPosition[1] >= GameManager.Instance.Height)
                 continue;
-
 
             //下两个位子的预测
             if (bi.gridPosition[1] <= 1)
@@ -203,10 +229,13 @@ public class BlockGroup : PoolObject
         {
             if (bList != null && bList.Count > 0 && canMove)
             {
-                gameObject.transform.Translate(BlocksManager.Instance.InitSize * Vector3.down);
-                foreach (Block bi in bList)
+                if (needTranslate)
                 {
-                    bi.gridPosition[1]--;
+                    gameObject.transform.Translate(BlocksManager.Instance.InitSize * Vector3.down);
+                    foreach (Block bi in bList)
+                    {
+                        bi.gridPosition[1]--;
+                    }
                 }
             }
             else
@@ -517,6 +546,7 @@ public class BlockGroup : PoolObject
     //方块到底后，触发一系列事件
     private void reachBottom()
     {
+        Debug.Log("ReachBottom");
         if (bList != null)
             foreach (Block bi in bList)
             {
@@ -545,7 +575,7 @@ public class BlockGroup : PoolObject
 
     private void BlockGroupOver()
     {
-        BlocksManager.Instance.refreshGrid();
+        BlocksManager.Instance.RefreshGrid();
         if (isPiece)
         {
             BlocksManager.Instance.currentBlockGroupPieces.Remove(this);
@@ -582,7 +612,7 @@ public class BlockGroup : PoolObject
         }
 
         tryBreakIntoPieces(true);
-        BlocksManager.Instance.tryBreakIntoPieces(GameManager.Instance.IsPieceAbandon);
+        BlocksManager.Instance.TryBreakIntoPieces(GameManager.Instance.IsPieceAbandon);
     }
 
     //自带Breaker触及方块后的事件
@@ -597,7 +627,7 @@ public class BlockGroup : PoolObject
 
         foreach (int[] breakGridPos in breakGridsPos)
         {
-            Block breakMegaBlock = BlocksManager.Instance.isInBoxes(breakGridPos);
+            Block breakMegaBlock = BlocksManager.Instance.IsInBoxes(breakGridPos);
             if (breakMegaBlock != null)
             {
                 countBreakScore += breakMegaBlock.BlockInfo[3] * breakMegaBlock.BlockInfo[4];
@@ -614,7 +644,7 @@ public class BlockGroup : PoolObject
             GameManager.Instance.GetBreakScore(countBreakScore);
 
         tryBreakIntoPieces(GameManager.Instance.IsPieceAbandon);
-        BlocksManager.Instance.tryBreakIntoPieces(GameManager.Instance.IsPieceAbandon);
+        BlocksManager.Instance.TryBreakIntoPieces(GameManager.Instance.IsPieceAbandon);
     }
 
     //是否为大块分裂成的小块

@@ -7,6 +7,9 @@ public class BlocksManager : MonoSingletion<BlocksManager>
     public GameObject BlockGroupPrefab;
     public GameObject AbandonBlockGroupPrefab;
 
+    public bool ShowGridIndex;
+    public bool ShowGridColor;
+
     public Vector3 StartPosition;
     public BlockGroup currentBlockGroup;
     public List<BlockGroup> currentBlockGroupPieces = new List<BlockGroup>();
@@ -75,9 +78,19 @@ public class BlocksManager : MonoSingletion<BlocksManager>
         creatNewBlockGroup();
     }
 
+    private float addLineTick = 0f;
+
     void Update()
     {
         if (GameManager.Instance.GameState != GameManager.GameStates.Playing) return;
+
+        addLineTick += Time.deltaTime;
+        if (addLineTick > GameManager.Instance.AddLineInterval)
+        {
+            AddLineOfBlock();
+            addLineTick = 0;
+        }
+
         updateKeyControl();
     }
 
@@ -131,7 +144,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                     float downInterval = KeyPressTimeThreshold / (downKeyPressTime / KeyPressTimeThreshold);
                     if (downKeyTick >= downInterval / DownAccelerate)
                     {
-                        currentBlockGroup.down();
+                        currentBlockGroup.down(true);
                         downKeyTick = 0;
                     }
                 }
@@ -141,7 +154,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
             {
                 if (downKeyTick < KeyClickTimeThreshold)
                 {
-                    currentBlockGroup.down();
+                    currentBlockGroup.down(true);
                 }
 
                 resetKeyPressTime();
@@ -228,9 +241,9 @@ public class BlocksManager : MonoSingletion<BlocksManager>
 
     public Block[,] MegaBlock_Pointers;
 
-    public void refreshGrid()
+    public void RefreshGrid()
     {
-        if (tryBreakIntoPieces(GameManager.Instance.IsPieceAbandon))
+        if (TryBreakIntoPieces(GameManager.Instance.IsPieceAbandon))
         {
             return;
         }
@@ -242,7 +255,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
             mb.PoolRecycle();
         }
 
-        List<int[]> temp = findAllBoxes(Grid, GameManager.Instance.ColorNum);
+        List<int[]> temp = FindAllBoxes(Grid, GameManager.Instance.ColorNum);
         int biggestMegaArea = 1;
         int currentBiggestRow = 1;
         int currentBiggestCol = 1;
@@ -276,7 +289,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
             GameManager.Instance.GetEliminateScore(countEliminateScore);
 
         if (isMegaBlockDisapear)
-            refreshGrid();
+            RefreshGrid();
     }
 
     /// <summary>
@@ -284,7 +297,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
     /// </summary>
     /// <returns><c>true</c>, if break into pieces was tryed, <c>false</c> otherwise.</returns>
     /// <param name="isPieceAbandon">是否抛弃落下的方块<c>true</c> isPieceAbandon.</param>
-    public bool tryBreakIntoPieces(bool isPieceAbandon)
+    public bool TryBreakIntoPieces(bool isPieceAbandon)
     {
         for (int i = 0; i < GameManager.Instance.Width; i++)
         {
@@ -368,7 +381,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
     }
 
     //判断breaker是否撞上box
-    public Block isInBoxes(int[] gridPosition)
+    public Block IsInBoxes(int[] gridPosition)
     {
         foreach (Block megaBlock in MegaBlocks)
         {
@@ -398,7 +411,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
         }
     }
 
-    private List<int[]> findAllBoxes(int[,] grid, int colorNum)
+    private List<int[]> FindAllBoxes(int[,] grid, int colorNum)
     {
         if (grid == null || grid.GetLength(0) == 0 || grid.GetLength(1) == 0)
             return null;
@@ -519,7 +532,7 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                 }
             }
 
-            List<int[]> newRes = findAllBoxes(resultGrid, colorNum);
+            List<int[]> newRes = FindAllBoxes(resultGrid, colorNum);
             foreach (int[] megaBlock in newRes)
             {
                 res.Add(megaBlock);
@@ -550,8 +563,54 @@ public class BlocksManager : MonoSingletion<BlocksManager>
                 MegaBlock_Pointers[i, j] = newMegaBlock;
             }
         }
+    }
 
-        GameManager.Instance.SetMaxBlockSize(new int[] {Cols, Rows});
+    public void AddLineOfBlock()
+    {
+        bool isGameOver = false;
+
+        //整体上移
+        for (int i = Grid.GetLength(0) - 1; i >= 0; i--)
+        {
+            for (int j = Grid.GetLength(1) - 1; j > 0; j--)
+            {
+                if (j == Grid.GetLength(1) - 1 && Grid[i, j] != -1) isGameOver = true;
+                Grid[i, j] = Grid[i, j - 1];
+            }
+        }
+
+        //创建新的行
+        for (int i = 0; i < Grid.GetLength(0); i++)
+        {
+            int colorIndex = Random.Range(0, GameManager.Instance.ColorNum);
+            Grid[i, 0] = colorIndex;
+        }
+
+        //整体上移
+        for (int i = Grid.GetLength(0) - 1; i >= 0; i--)
+        {
+            for (int j = Grid.GetLength(1) - 1; j >= 0; j--)
+            {
+                if (Blocks[i, j]) Blocks[i, j].RefreshGridPosition(new int[] {i, j + 1});
+                if (j > 0)
+                {
+                    Blocks[i, j] = Blocks[i, j - 1];
+                }
+            }
+        }
+
+        //创建新的行
+        for (int i = 0; i < Grid.GetLength(0); i++)
+        {
+            Blocks[i, 0] = GameObjectPoolManager.Instance.Pool_BlockPool[Grid[i, 0]].AllocateGameObject<Block>(transform);
+            Blocks[i, 0].InitiateBlockByGridPosition(Grid[i, 0], new int[] {i, 0});
+        }
+
+        Debug.Log("AddLine");
+        if (currentBlockGroup) currentBlockGroup.down(false);
+
+        RefreshGrid();
+        if (isGameOver) GameManager.Instance.GameOver();
     }
 
     #endregion
