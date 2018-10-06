@@ -2,8 +2,8 @@
 
 public class GameObjectPool : MonoBehaviour
 {
-    PoolObject[] gameObjectPool; //对象池
-    bool[] isUsed;//已使用的对象
+    [SerializeField] private PoolObject[] gameObjectPool; //对象池
+    [SerializeField] private bool[] isUsed;//已使用的对象
     //Todo Temp public
     public int capacity; //对象池容量，根据场景中可能出现的最多数量的该对象预估一个容量
     public int used; //已使用多少个对象
@@ -50,12 +50,14 @@ public class GameObjectPool : MonoBehaviour
                 else
                 {
                     gameObjectPool[i] = Instantiate(gameObjectPrefab, parent);
+                    gameObjectPool[i].PoolObjectInstanceID = PoolObject.GenerateInstanceID();
                     gameObjectPool[i].name = gameObjectPrefab.name + "_" + i;//便于调试的时候分辨对象
                     gameObjectPool[i].SetObjectPool(this);
                     empty--;
                     used++;
                 }
                 isUsed[i] = true;
+                gameObjectPool[i].isPoolAvailable = false;
                 return (T)gameObjectPool[i];
             }
         }
@@ -70,6 +72,7 @@ public class GameObjectPool : MonoBehaviour
             if (gameObjectPool[i] == recGameObject)
             {
                 isUsed[i] = false;
+                gameObjectPool[i].isPoolAvailable = true;
                 recGameObject.transform.SetParent(transform);
                 recGameObject.transform.localPosition = gameObjectDefaultPosition;
                 used--;

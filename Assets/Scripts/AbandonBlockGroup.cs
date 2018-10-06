@@ -6,10 +6,12 @@ public class AbandonBlockGroup : PoolObject
 {
     public override void PoolRecycle()
     {
+        if (isPoolAvailable) return;
         foreach (Block b in bList)
         {
             b.PoolRecycle();
         }
+        bList = null;
         base.PoolRecycle();
         Anim.SetTrigger("Reset");
     }
@@ -39,5 +41,6 @@ public class AbandonBlockGroup : PoolObject
         Anim.SetTrigger("JumpDown");
         yield return new WaitForSeconds(1);
         PoolRecycle();
+        yield return null;
     }
 }

@@ -7,16 +7,19 @@ public class GameObjectPoolManager : MonoSingletion<GameObjectPoolManager>
     }
 
     public GameObjectPool Pool_BreakBlockPool;
-    public PoolObject BreakBlockPrefab;
+    [SerializeField] private PoolObject BreakBlockPrefab;
 
     public GameObjectPool[] Pool_BlockPool;
-    public PoolObject[] BlockPrefab;
+    [SerializeField] private PoolObject[] BlockPrefab;
 
     public GameObjectPool Pool_BlockGroupPool;
-    public PoolObject BlockGroupPrefab;
+    [SerializeField] private PoolObject BlockGroupPrefab;
 
     public GameObjectPool Pool_AbandonBlockGroupPool;
-    public PoolObject AbandonBlockGroupPrefab;
+    [SerializeField] private PoolObject AbandonBlockGroupPrefab;
+
+    public GameObjectPool Pool_GridLinePool;
+    [SerializeField] private PoolObject GridLinePrefab;
 
     void Awake()
     {
@@ -28,5 +31,6 @@ public class GameObjectPoolManager : MonoSingletion<GameObjectPoolManager>
 
         Pool_BlockGroupPool.Initiate(BlockGroupPrefab, 30);
         Pool_AbandonBlockGroupPool.Initiate(AbandonBlockGroupPrefab, 30);
+        Pool_GridLinePool.Initiate(GridLinePrefab, 50);
     }
 }

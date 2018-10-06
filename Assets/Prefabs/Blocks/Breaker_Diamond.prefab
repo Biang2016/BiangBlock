@@ -95,6 +95,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 92c46c3c44eb94554acac41fb8a41a52, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  PoolObjectInstanceID: 0
+  isPoolAvailable: 1
   ColorIndex: 0
   relativePosition: 0000000000000000
   gridPosition: 0000000000000000

@@ -5,13 +5,22 @@ public class Block : PoolObject
 {
     public override void PoolRecycle()
     {
+        if (isPoolAvailable) return;
         base.PoolRecycle();
+        Block[] childern = this.GetComponentsInChildren<Block>();
+        foreach (Block child in childern)
+        {
+            if (child == this) continue;
+            child.PoolRecycle();
+        }
         isMegaBlock = false;
         BlockInfo = null;
         leftBlock = null;
         rightBlock = null;
         aboveBlock = null;
         beneathBlock = null;
+        isSignedRootedInGround = false;
+        isSignedFly = false;
     }
 
     public int ColorIndex;
@@ -38,8 +47,8 @@ public class Block : PoolObject
 
         gameObject.transform.localScale = new Vector3(BlocksManager.Instance.InitSize - BlocksManager.Instance.InitBorder, BlocksManager.Instance.InitSize - BlocksManager.Instance.InitBorder, BlocksManager.Instance.InitThick);
         gameObject.transform.position = new Vector3(relativePosition[0] * BlocksManager.Instance.InitSize + gameObject.transform.parent.position.x, relativePosition[1] * BlocksManager.Instance.InitSize + gameObject.transform.parent.position.y, BlocksManager.Instance.InitZ);
-        gridPosition[0] = (int) (relativePosition[0] + gameObject.transform.parent.position.x + GameManager.Instance.Width / 2);
-        gridPosition[1] = (int) (relativePosition[1] + gameObject.transform.parent.position.y + GameManager.Instance.Height / 2);
+        gridPosition[0] = (int)(relativePosition[0] + gameObject.transform.parent.position.x + GameManager.Instance.Width / 2);
+        gridPosition[1] = (int)(relativePosition[1] + gameObject.transform.parent.position.y + GameManager.Instance.Height / 2);
     }
 
     public void InitiateBlockByGridPosition(int bc, int[] gp)
@@ -62,8 +71,14 @@ public class Block : PoolObject
 
     public void removeBlock()
     {
-        BlocksManager.Instance.Grid[gridPosition[0], gridPosition[1]] = -1;
-        BlocksManager.Instance.Blocks[gridPosition[0], gridPosition[1]] = null;
+        if (gridPosition[0] < 0 || gridPosition[0] >= BlocksManager.Instance.Grid.GetLength(0) || gridPosition[1] < 0 || gridPosition[1] >= BlocksManager.Instance.Grid.GetLength(1))
+        {
+        }
+        else
+        {
+            BlocksManager.Instance.Grid[gridPosition[0], gridPosition[1]] = -1;
+            BlocksManager.Instance.Blocks[gridPosition[0], gridPosition[1]] = null;
+        }
 
         if (dieEffect != null)
         {

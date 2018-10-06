@@ -35,30 +35,36 @@ public class BlockGroupGenerator : MonoSingletion<BlockGroupGenerator>
     }
 
     //三个数字，第一个数字记录的是颜色(-2代表breaker)，后两个数字是Relative Position
+    static BlockGroupType Block_tri_SingleColor = new BlockGroupType(new int[][] {
+        new int[]{ 0, 0, 1 },
+        new int[]{ 0, 0, 0 },
+        new int[] { 0, 1, 0 },
+        new int[] { 0, 0, -1 }
+    }, 5);
     static BlockGroupType Block_lz = new BlockGroupType(new int[][] {
         new int[]{ 0, 0, 1 },
         new int[]{ 0, 0, 0 },
         new int[] { 1, 1, 0 },
         new int[] { 1, 1, -1 }
-    }, 3);
+    }, 0);
     static BlockGroupType Block_lz_SingleColor = new BlockGroupType(new int[][] {
         new int[]{ 0, 0, 1 },
         new int[]{ 0, 0, 0 },
         new int[] { 0, 1, 0 },
         new int[] { 0, 1, -1 }
-    }, 5);
+    }, 0);
     static BlockGroupType Block_rz = new BlockGroupType(new int[][] {
         new int[]{ 0, 0, 0 },
         new int[]{ 0, 0, -1 },
         new int[] { 1, 1, 0 },
         new int[] { 1, 1, 1 }
-    }, 3);
+    }, 0);
     static BlockGroupType Block_rz_SingleColor = new BlockGroupType(new int[][] {
         new int[]{ 0, 0, 0 },
         new int[]{ 0, 0, -1 },
         new int[] { 0, 1, 0 },
         new int[] { 0, 1, 1 }
-    }, 5);
+    }, 0);
     static BlockGroupType Block_L = new BlockGroupType(new int[][] {
         new int[]{ 0, -1, 0 },
         new int[]{ 0, -1, 1 },
@@ -201,6 +207,7 @@ public class BlockGroupGenerator : MonoSingletion<BlockGroupGenerator>
     private void initializeBlockType()
     {
         BlockGroupTypes = new List<BlockGroupType>();
+        BlockGroupTypes.Add(Block_tri_SingleColor);
         BlockGroupTypes.Add(Block_lz);
         BlockGroupTypes.Add(Block_lz_SingleColor);
         BlockGroupTypes.Add(Block_rz);

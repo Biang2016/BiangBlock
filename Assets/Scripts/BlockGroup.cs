@@ -5,12 +5,15 @@ public class BlockGroup : PoolObject
 {
     public override void PoolRecycle()
     {
+        if (isPoolAvailable) return;
         base.PoolRecycle();
         bList = null;
         downTicker = 0;
         isBox = false;
         isPiece = false;
         isBroken = false;
+        lastCent = new float[2];
+        lastsize = new int[2];
     }
 
     public List<Block> bList;
@@ -24,8 +27,6 @@ public class BlockGroup : PoolObject
     {
         if (!isPiece)
             downTime = GameManager.Instance.DownTime;
-        else if (!GameManager.Instance.IsPieceAbandon)
-            downTime = GameManager.Instance.PieceDownTime;
         else
             downTime = GameManager.Instance.AbandonPieceDownTime;
     }
@@ -50,6 +51,10 @@ public class BlockGroup : PoolObject
 
     public void Initialize()
     {
+        foreach (Block b in GetComponentsInChildren<Block>())
+        {
+            b.PoolRecycle();
+        }
         bList = RandomBlockGroup();
         InitDownTime();
     }
@@ -77,7 +82,8 @@ public class BlockGroup : PoolObject
         int[] use_colors = new int[2];
         for (int i = 0; i < use_colors.Length; i++)
         {
-            use_colors[i] = Random.Range(0, GameManager.Instance.ColorNum);
+            int index = Random.Range(0, BlocksManager.Instance.LeftColors.Count);
+            use_colors[i] = BlocksManager.Instance.LeftColors[index];
         }
 
         List<Block> res = new List<Block>();
@@ -101,14 +107,22 @@ public class BlockGroup : PoolObject
         return res;
     }
 
+    public void RemoveBlockFromGroup(Block block)
+    {
+        if (!bList.Contains(block))
+        {
+            //Debug.LogError("Blist not contains block");
+            return;
+        }
+        bList.Remove(block);
+    }
+
     #region Block motions
 
     public void down(bool needTranslate) //needTranslate表示，是否是有Addline引起的模拟down
     {
-        if (bList == null) return;
+        if (bList == null || GameManager.Instance.GameState == GameManager.GameStates.GameOver) return;
 
-        if (needTranslate) Debug.Log("SelfDown");
-        else Debug.Log("AddLineDown");
         if (needTranslate) downTicker = 0;
         bool canMove = true;
         bool isReachBreaker = false;
@@ -118,31 +132,6 @@ public class BlockGroup : PoolObject
         List<int[]> breakGridsPos = new List<int[]>();
         List<Block> ourBreakers = new List<Block>();
 
-        bool needMoveUp = false;
-        foreach (Block bi in bList)
-        {
-            if (bi.gridPosition[1] >= GameManager.Instance.Height)
-                continue;
-
-            if (!needTranslate)
-            {
-                if (BlocksManager.Instance.Grid[bi.gridPosition[0], bi.gridPosition[1]] != -1) //如果是Addline引起的模拟down，需要判定本体是否已经陷入上升的基础中
-                {
-                    needMoveUp = true;
-                    break;
-                }
-            }
-        }
-
-        if (needMoveUp) //如果是Addline引起的模拟down，需要判定本体是否已经陷入上升的基础中，如果是，则要向上移动一格
-        {
-            gameObject.transform.Translate(BlocksManager.Instance.InitSize * Vector3.up);
-            foreach (Block bi in bList)
-            {
-                bi.gridPosition[1]++;
-            }
-        }
-
         foreach (Block bi in bList)
         {
             if (bi.gridPosition[1] <= 0)
@@ -151,7 +140,7 @@ public class BlockGroup : PoolObject
                 break;
             }
 
-            if (bi.gridPosition[1] >= GameManager.Instance.Height)
+            if (bi.gridPosition[1] > GameManager.Instance.Height)
                 continue;
 
             //下两个位子的预测
@@ -175,7 +164,7 @@ public class BlockGroup : PoolObject
             {
                 //下个位子遇到Breaker
                 isReachBreaker = true;
-                breakersGridPos.Add(new int[] {bi.gridPosition[0], bi.gridPosition[1] - 1});
+                breakersGridPos.Add(new int[] { bi.gridPosition[0], bi.gridPosition[1] - 1 });
                 ourBrokenBlock.Add(bi);
             }
 
@@ -183,7 +172,7 @@ public class BlockGroup : PoolObject
             {
                 //如果下个位置非空且此方块为Breaker，则记录，待定
                 isBreakerReach = true;
-                breakGridsPos.Add(new int[] {bi.gridPosition[0], bi.gridPosition[1] - 1});
+                breakGridsPos.Add(new int[] { bi.gridPosition[0], bi.gridPosition[1] - 1 });
                 ourBreakers.Add(bi);
             }
 
@@ -236,6 +225,7 @@ public class BlockGroup : PoolObject
                     {
                         bi.gridPosition[1]--;
                     }
+                    lastCent[1] -= 1;
                 }
             }
             else
@@ -288,7 +278,7 @@ public class BlockGroup : PoolObject
             {
                 //下个位子遇到Breaker
                 isReachBreaker = true;
-                breakersGridPos.Add(new int[] {bi.gridPosition[0] - 1, bi.gridPosition[1]});
+                breakersGridPos.Add(new int[] { bi.gridPosition[0] - 1, bi.gridPosition[1] });
                 ourBrokenBlock.Add(bi);
             }
 
@@ -296,7 +286,7 @@ public class BlockGroup : PoolObject
             {
                 //如果下个位置非空且此方块为Breaker，则记录，待定
                 isBreakerReach = true;
-                breakGridsPos.Add(new int[] {bi.gridPosition[0] - 1, bi.gridPosition[1]});
+                breakGridsPos.Add(new int[] { bi.gridPosition[0] - 1, bi.gridPosition[1] });
                 ourBreakers.Add(bi);
             }
 
@@ -349,6 +339,7 @@ public class BlockGroup : PoolObject
                     {
                         bi.gridPosition[0]--;
                     }
+                    lastCent[0] -= 1;
                 }
             }
             else
@@ -401,7 +392,7 @@ public class BlockGroup : PoolObject
             {
                 //下个位子遇到Breaker
                 isReachBreaker = true;
-                breakersGridPos.Add(new int[] {bi.gridPosition[0] + 1, bi.gridPosition[1]});
+                breakersGridPos.Add(new int[] { bi.gridPosition[0] + 1, bi.gridPosition[1] });
                 ourBrokenBlock.Add(bi);
             }
 
@@ -409,7 +400,7 @@ public class BlockGroup : PoolObject
             {
                 //如果下个位置非空且此方块为Breaker，则记录，待定
                 isBreakerReach = true;
-                breakGridsPos.Add(new int[] {bi.gridPosition[0] + 1, bi.gridPosition[1]});
+                breakGridsPos.Add(new int[] { bi.gridPosition[0] + 1, bi.gridPosition[1] });
                 ourBreakers.Add(bi);
             }
 
@@ -462,6 +453,7 @@ public class BlockGroup : PoolObject
                     {
                         bi.gridPosition[0]++;
                     }
+                    lastCent[0] += 1;
                 }
             }
             else
@@ -472,30 +464,98 @@ public class BlockGroup : PoolObject
         }
     }
 
-    public void rotate()
+    private int[] lastsize = new int[2];
+    private float[] lastCent = new float[2];
+    private void GetPrepareRotatePos()
     {
-        if (isBox)
+        int minX = 20;
+        int minY = 30;
+        int maxX = -20;
+        int maxY = -30;
+        foreach (Block b in bList)
         {
-            rotateBox();
-            return;
+            if (b.gridPosition[0] < minX)
+            {
+                minX = b.gridPosition[0];
+            }
+            if (b.gridPosition[0] > maxX)
+            {
+                maxX = b.gridPosition[0];
+            }
+            if (b.gridPosition[1] < minY)
+            {
+                minY = b.gridPosition[1];
+            }
+            if (b.gridPosition[1] > maxY)
+            {
+                maxY = b.gridPosition[1];
+            }
         }
 
+        bool needRefreshCenter = true;
+        if ((lastsize[0] == maxX - minX + 1 && lastsize[1] == maxY - minY + 1) || (lastsize[0] == maxY - minY + 1 && lastsize[1] == maxX - minX + 1))
+        {
+            needRefreshCenter = false;
+        }
+        else
+        {
+            lastsize[0] = maxX - minX + 1;
+            lastsize[1] = maxY - minY + 1;
+            if (maxX - minX == maxY - minY && (maxX - minX) % 2 == 1)
+            {
+                isBox = true;//偶数边长正方形方块，旋转特例
+            }
+            else
+            {
+                isBox = false;
+            }
+        }
+
+        if (needRefreshCenter)
+        {
+            if (!isBox)
+            {
+                lastCent[0] = (minX + maxX) / 2;
+                lastCent[1] = (minY + maxY) / 2;
+            }
+            else
+            {
+                lastCent[0] = (float)(minX + maxX) / 2;
+                lastCent[1] = (float)(minY + maxY) / 2;
+            }
+        }
+
+        foreach (Block bi in bList)
+        {
+            float relativePocX = ((float)bi.gridPosition[0] - lastCent[0]);
+            float relativePocY = ((float)bi.gridPosition[1] - lastCent[1]);
+
+            bi.gridPosition_RotatePrepare[0] = Mathf.RoundToInt(-relativePocY + lastCent[0]);
+            bi.gridPosition_RotatePrepare[1] = Mathf.RoundToInt(relativePocX + lastCent[1]);
+        }
+    }
+
+    public void rotate()
+    {
+        GetPrepareRotatePos();
         bool canRotate = true;
         foreach (Block bi in bList)
         {
-            bi.gridPosition_RotatePrepare[0] = (int) (-bi.relativePosition[1] + gameObject.transform.position.x + GameManager.Instance.Width / 2);
-            bi.gridPosition_RotatePrepare[1] = (int) (bi.relativePosition[0] + gameObject.transform.position.y + GameManager.Instance.Height / 2);
-            if (bi.gridPosition_RotatePrepare[0] >= GameManager.Instance.Width || bi.gridPosition_RotatePrepare[0] < 0 || bi.gridPosition_RotatePrepare[1] < 0 || bi.gridPosition_RotatePrepare[1] >= GameManager.Instance.Height)
+            if (bi.gridPosition_RotatePrepare[0] >= GameManager.Instance.Width || bi.gridPosition_RotatePrepare[0] < 0 || bi.gridPosition_RotatePrepare[1] < 0)
             {
                 canRotate = false;
                 break;
             }
 
-            if (BlocksManager.Instance.Grid[bi.gridPosition_RotatePrepare[0], bi.gridPosition_RotatePrepare[1]] != -1)
+            if (bi.gridPosition_RotatePrepare[0] < GameManager.Instance.Width && bi.gridPosition_RotatePrepare[0] >= 0 && bi.gridPosition_RotatePrepare[1] >= 0 && bi.gridPosition_RotatePrepare[1] < GameManager.Instance.Height)
             {
-                canRotate = false;
-                break;
+                if (BlocksManager.Instance.Grid[bi.gridPosition_RotatePrepare[0], bi.gridPosition_RotatePrepare[1]] != -1)
+                {
+                    canRotate = false;
+                    break;
+                }
             }
+
         }
 
         if (canRotate)
@@ -503,56 +563,23 @@ public class BlockGroup : PoolObject
             foreach (Block bi in bList)
             {
                 bi.gameObject.transform.Translate(BlocksManager.Instance.InitSize * Vector3.right * (bi.gridPosition_RotatePrepare[0] - bi.gridPosition[0]) + Vector3.up * (bi.gridPosition_RotatePrepare[1] - bi.gridPosition[1]));
-
                 bi.gridPosition[0] = bi.gridPosition_RotatePrepare[0];
                 bi.gridPosition[1] = bi.gridPosition_RotatePrepare[1];
-                int temp = bi.relativePosition[0];
-                bi.relativePosition[0] = -bi.relativePosition[1];
-                bi.relativePosition[1] = temp;
             }
-        }
-    }
-
-    private void rotateBox()
-    {
-        float cenX = 0;
-        float cenY = 0;
-        foreach (Block bi in bList)
-        {
-            cenX += bi.gridPosition[0];
-            cenY += bi.gridPosition[1];
-        }
-
-        cenX /= bList.Count;
-        cenY /= bList.Count;
-        foreach (Block bi in bList)
-        {
-            bi.gridPosition_RotatePrepare[0] = (int) (cenY + cenX - bi.gridPosition[1]);
-            bi.gridPosition_RotatePrepare[1] = (int) (cenY - cenX + bi.gridPosition[0]);
-        }
-
-        for (int i = 0; i < gameObject.transform.childCount; i++)
-        {
-            gameObject.transform.GetChild(i).Translate(BlocksManager.Instance.InitSize * Vector3.right * (bList[i].gridPosition_RotatePrepare[0] - bList[i].gridPosition[0]) + Vector3.up * (bList[i].gridPosition_RotatePrepare[1] - bList[i].gridPosition[1]));
-        }
-
-        foreach (Block bi in bList)
-        {
-            bi.gridPosition[0] = bi.gridPosition_RotatePrepare[0];
-            bi.gridPosition[1] = bi.gridPosition_RotatePrepare[1];
         }
     }
 
     //方块到底后，触发一系列事件
     private void reachBottom()
     {
-        Debug.Log("ReachBottom");
+        //Debug.Log("ReachBottom");
+        AudioManager.Instance.SoundPlay("OnReachBottom");
         if (bList != null)
             foreach (Block bi in bList)
             {
                 if (bi.gridPosition[1] >= GameManager.Instance.Height)
                 {
-                    Debug.Log("Game Over");
+                    //Debug.Log("Game Over");
                     GameManager.Instance.GameOver();
                     return;
                 }
@@ -576,6 +603,7 @@ public class BlockGroup : PoolObject
     private void BlockGroupOver()
     {
         BlocksManager.Instance.RefreshGrid();
+        if (GameManager.Instance.GameState == GameManager.GameStates.GameOver) return;
         if (isPiece)
         {
             BlocksManager.Instance.currentBlockGroupPieces.Remove(this);
@@ -607,12 +635,16 @@ public class BlockGroup : PoolObject
 
         foreach (Block ob in ourBrokenBlock)
         {
-            if (bList != null) bList.Remove(ob);
+            if (bList != null)
+            {
+                bList.Remove(ob);
+            }
             ob.removeBlock();
         }
 
-        tryBreakIntoPieces(true);
-        BlocksManager.Instance.TryBreakIntoPieces(GameManager.Instance.IsPieceAbandon);
+        AudioManager.Instance.SoundPlay("OnBreak");
+        tryBreakIntoPieces();
+        BlocksManager.Instance.TryBreakIntoPieces();
     }
 
     //自带Breaker触及方块后的事件
@@ -621,7 +653,10 @@ public class BlockGroup : PoolObject
         int countBreakScore = 0;
         foreach (Block ourBreaker in ourBreakers)
         {
-            if (bList != null) bList.Remove(ourBreaker);
+            if (bList != null)
+            {
+                RemoveBlockFromGroup(ourBreaker);
+            }
             ourBreaker.removeBlock();
         }
 
@@ -641,11 +676,15 @@ public class BlockGroup : PoolObject
         }
 
         if (countBreakScore > 0)
+        {
             GameManager.Instance.GetBreakScore(countBreakScore);
+            AudioManager.Instance.SoundPlay("OnBreak");
+        }
 
-        tryBreakIntoPieces(GameManager.Instance.IsPieceAbandon);
-        BlocksManager.Instance.TryBreakIntoPieces(GameManager.Instance.IsPieceAbandon);
+        tryBreakIntoPieces();
+        BlocksManager.Instance.TryBreakIntoPieces();
     }
+
 
     //是否为大块分裂成的小块
     public bool isPiece = false;
@@ -653,7 +692,7 @@ public class BlockGroup : PoolObject
     //该大块是否已经分裂
     public bool isBroken = false;
 
-    private void tryBreakIntoPieces(bool isPieceAbandon)
+    private void tryBreakIntoPieces()
     {
         if (bList.Count == 0)
             return;
