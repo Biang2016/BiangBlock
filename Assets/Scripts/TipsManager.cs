@@ -8,9 +8,10 @@ public class TipsManager : MonoSingletion<TipsManager>
     private List<string> tips = new List<string>{
         "Breaker group can be used in several places! You can still control the remain after it crashes, unless it is broken into pieces.",
         "If you want to make the best of breakers, try to trigger a fall.",
-        "Sometimes abandoning is also important, especially when you are facing failure. Break those deadly big blocks.",
+        "Sometimes giving up is also important, especially when you are facing failure. Break those deadly big blocks.",
         "When there is only one color left, there would be no line added from the bottom anymore.",
-        "If you feel it too simple, please have a try on the Nightmare level!"
+        "If you feel it too simple, please have a try on the Nightmare level!",
+        "You can throw all those waste blocks together in a pile and then use breaker to trigger a fall to eliminate them."
     };
 
     [SerializeField] private Text[] TipsText;

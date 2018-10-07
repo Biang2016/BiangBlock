@@ -225,7 +225,7 @@ public class BlockGroupGenerator : MonoSingletion<BlockGroupGenerator>
         BlockGroupTypes.Add(Block_box23_SingleColor);
         BlockGroupTypes.Add(Block_box33_SingleColor);
         BlockGroupTypes.Add(Block_box34);
-        BlockGroupTypes.Add(Block_box34_SingleColor);
+        //BlockGroupTypes.Add(Block_box34_SingleColor);
         BlockGroupTypes.Add(Block_barBreaker);
         BlockGroupTypes.Add(Block_BlockBreaker1);
         BlockGroupTypes.Add(Block_BlockBreaker1);
